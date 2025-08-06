@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
+from itertools import islice
 import os
 
-LABELS_CSV = "labels.csv"
-IMAGE_FOLDER = "images"
+LABELS_CSV = "flowerLabels.csv"
+IMAGE_FOLDER = "flowerImages"
 
 st.set_page_config(layout = "wide")
 st.title("Visual Dataset Explorer")
@@ -19,7 +20,7 @@ except FileNotFoundError:
 
 # sidebar: filter by label
 labels = df['label'].dropna().unique()
-selected_label = st.sidebar.selectbox("Filter by label", options["All"] + sorted(labels.tolist()))
+selected_label = st.sidebar.selectbox("Filter by label", options=["All"] + sorted(labels.tolist()))
 
 # applying filter
 if selected_label != "All":
@@ -29,13 +30,14 @@ else:
 
 st.write(f"Displaying {len(filtered_df)} images")
 
-# display images in grid
-cols = st.columns(4)
-for idx,row in filtered_df.iterrows():
-    img_path = os.path.join(IMAGE_FOLDER, row['filename'])
-    try:
-        img = Image.open(img_path)
-        with cols[idx % 4]:
-            st.image(img, caption=row['label'], use_column_width=True)
-    except FileNotFoundError:
-        st.warning(f"Image not found: {row['filename']}")
+# Display images
+rows = list(filtered_df.iterrows())
+for i in range(0, len(rows), 4):
+    cols = st.columns(4)
+    for col, (_, row) in zip(cols, rows[i:i+4]):
+        img_path = os.path.join(IMAGE_FOLDER, row['filename'])
+        try:
+            img = Image.open(img_path)
+            col.image(img, caption=row['label'], use_container_width=True)
+        except FileNotFoundError:
+            col.warning(f"Image not found: {row['filename']}")
